@@ -1,430 +1,419 @@
-from PySide6.QtCore import Qt
+import tkinter as tk
 
-from PySide6.QtWidgets import (
-    QMainWindow,
-    QWidget,
-    QPushButton,
-    QTextEdit,
-    QVBoxLayout,
-    QHBoxLayout,
-    QFileDialog,
-    QMessageBox,
-    QLabel
+from tkinter import ttk
+from tkinter import filedialog
+from tkinter import messagebox
+
+from datetime import datetime
+
+from speech.recorder import SpeechRecorder
+from spreadsheet.pandas_handler import (
+    PandasSpreadsheetHandler
 )
 
-from gui.settings_dialog import SettingsDialog
-from gui.term_dialog import TermDialog
 
-from spreadsheet.libreoffice_handler import LibreOfficeHandler
+class MainWindow:
 
-from speech.dictation_thread import DictationThread
+    def __init__(self, root):
 
+        self.root = root
 
-class MainWindow(QMainWindow):
+        self.root.title(
+            "Speech to Spreadsheet"
+        )
 
-    def __init__(self):
-        super().__init__()
+        self.root.geometry("900x600")
 
-        self.setWindowTitle("Speech Spreadsheet")
+        # =========================
+        # STATE
+        # =========================
 
-        self.resize(1200, 700)
+        self.is_recording = False
 
-        ###################################################
-        # LIBREOFFICE HANDLER
-        ###################################################
+        # =========================
+        # SPREADSHEET ENGINE
+        # =========================
 
-        self.spreadsheet = LibreOfficeHandler()
+        self.spreadsheet = (
+            PandasSpreadsheetHandler()
+        )
+
+        self.spreadsheet.set_columns([
+            "Timestamp",
+            "Speaker",
+            "Transcript"
+        ])
+
+        # =========================
+        # SPEECH RECORDER
+        # =========================
+
+        self.recorder = SpeechRecorder(
+            callback=self.on_transcript
+        )
+
+        # =========================
+        # UI
+        # =========================
+
+        self.build_ui()
+
+    # ==================================================
+    # UI SETUP
+    # ==================================================
+
+    def build_ui(self):
+
+        # --------------------------
+        # TITLE
+        # --------------------------
+
+        title_label = tk.Label(
+            self.root,
+            text="Speech to Spreadsheet",
+            font=("Arial", 18, "bold")
+        )
+
+        title_label.pack(
+            pady=10
+        )
+
+        # --------------------------
+        # BUTTON FRAME
+        # --------------------------
+
+        button_frame = tk.Frame(
+            self.root
+        )
+
+        button_frame.pack(
+            pady=10
+        )
+
+        # --------------------------
+        # START BUTTON
+        # --------------------------
+
+        self.start_button = tk.Button(
+            button_frame,
+            text="Start Recording",
+            width=18,
+            command=self.start_recording
+        )
+
+        self.start_button.grid(
+            row=0,
+            column=0,
+            padx=5
+        )
+
+        # --------------------------
+        # STOP BUTTON
+        # --------------------------
+
+        self.stop_button = tk.Button(
+            button_frame,
+            text="Stop Recording",
+            width=18,
+            command=self.stop_recording,
+            state=tk.DISABLED
+        )
+
+        self.stop_button.grid(
+            row=0,
+            column=1,
+            padx=5
+        )
+
+        # --------------------------
+        # EXPORT BUTTON
+        # --------------------------
+
+        self.export_button = tk.Button(
+            button_frame,
+            text="Export Spreadsheet",
+            width=18,
+            command=self.export_spreadsheet
+        )
+
+        self.export_button.grid(
+            row=0,
+            column=2,
+            padx=5
+        )
+
+        # --------------------------
+        # STATUS LABEL
+        # --------------------------
+
+        self.status_label = tk.Label(
+            self.root,
+            text="Ready",
+            fg="green",
+            font=("Arial", 10, "bold")
+        )
+
+        self.status_label.pack(
+            pady=5
+        )
+
+        # --------------------------
+        # TRANSCRIPT TABLE
+        # --------------------------
+
+        self.tree = ttk.Treeview(
+            self.root,
+            columns=(
+                "Timestamp",
+                "Speaker",
+                "Transcript"
+            ),
+            show="headings"
+        )
+
+        self.tree.heading(
+            "Timestamp",
+            text="Timestamp"
+        )
+
+        self.tree.heading(
+            "Speaker",
+            text="Speaker"
+        )
+
+        self.tree.heading(
+            "Transcript",
+            text="Transcript"
+        )
+
+        self.tree.column(
+            "Timestamp",
+            width=180
+        )
+
+        self.tree.column(
+            "Speaker",
+            width=100
+        )
+
+        self.tree.column(
+            "Transcript",
+            width=550
+        )
+
+        self.tree.pack(
+            fill=tk.BOTH,
+            expand=True,
+            padx=10,
+            pady=10
+        )
+
+        # --------------------------
+        # SCROLLBAR
+        # --------------------------
+
+        scrollbar = ttk.Scrollbar(
+            self.tree,
+            orient="vertical",
+            command=self.tree.yview
+        )
+
+        self.tree.configure(
+            yscrollcommand=scrollbar.set
+        )
+
+        scrollbar.pack(
+            side="right",
+            fill="y"
+        )
+
+    # ==================================================
+    # RECORDING CONTROL
+    # ==================================================
+
+    def start_recording(self):
+
+        if self.is_recording:
+            return
 
         try:
 
-            self.spreadsheet.connect()
+            self.recorder.start()
+
+            self.is_recording = True
+
+            self.status_label.config(
+                text="Recording...",
+                fg="red"
+            )
+
+            self.start_button.config(
+                state=tk.DISABLED
+            )
+
+            self.stop_button.config(
+                state=tk.NORMAL
+            )
 
         except Exception as e:
 
-            QMessageBox.critical(
-                self,
-                "LibreOffice Connection Error",
+            messagebox.showerror(
+                "Recording Error",
+                str(e)
+            )
+
+    def stop_recording(self):
+
+        if not self.is_recording:
+            return
+
+        try:
+
+            self.recorder.stop()
+
+            self.is_recording = False
+
+            self.status_label.config(
+                text="Stopped",
+                fg="green"
+            )
+
+            self.start_button.config(
+                state=tk.NORMAL
+            )
+
+            self.stop_button.config(
+                state=tk.DISABLED
+            )
+
+        except Exception as e:
+
+            messagebox.showerror(
+                "Stop Error",
+                str(e)
+            )
+
+    # ==================================================
+    # TRANSCRIPT CALLBACK
+    # ==================================================
+
+    def on_transcript(self, transcript):
+
+        transcript = transcript.strip()
+
+        if not transcript:
+            return
+
+        timestamp = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
+
+        speaker = "User"
+
+        # --------------------------
+        # SAVE TO DATAFRAME
+        # --------------------------
+
+        self.spreadsheet.append_row([
+            timestamp,
+            speaker,
+            transcript
+        ])
+
+        # --------------------------
+        # UPDATE TABLE
+        # --------------------------
+
+        self.tree.insert(
+            "",
+            tk.END,
+            values=(
+                timestamp,
+                speaker,
+                transcript
+            )
+        )
+
+        # Auto-scroll
+
+        self.tree.yview_moveto(1)
+
+    # ==================================================
+    # EXPORT
+    # ==================================================
+
+    def export_spreadsheet(self):
+
+        if not self.spreadsheet.rows:
+
+            messagebox.showwarning(
+                "No Data",
+                "No transcript data available."
+            )
+
+            return
+
+        file_path = (
+            filedialog.asksaveasfilename(
+                defaultextension=".xlsx",
+                filetypes=[
+                    (
+                        "Excel Files",
+                        "*.xlsx"
+                    ),
+                    (
+                        "CSV Files",
+                        "*.csv"
+                    )
+                ]
+            )
+        )
+
+        if not file_path:
+            return
+
+        try:
+
+            if file_path.endswith(".csv"):
+
+                self.spreadsheet.save_csv(
+                    file_path
+                )
+
+            else:
+
+                self.spreadsheet.save_xlsx(
+                    file_path
+                )
+
+            messagebox.showinfo(
+                "Export Complete",
                 (
-                    "Could not connect to LibreOffice.\n\n"
-                    "Make sure LibreOffice is running in UNO mode.\n\n"
-                    f"Error:\n{e}"
+                    "Spreadsheet exported "
+                    "successfully."
                 )
             )
 
-        ###################################################
-        # DICTATION THREAD
-        ###################################################
+        except Exception as e:
 
-        self.dictation_thread = None
+            messagebox.showerror(
+                "Export Error",
+                str(e)
+            )
 
-        ###################################################
-        # UI
-        ###################################################
+    # ==================================================
+    # CLEANUP
+    # ==================================================
 
-        self.setup_ui()
+    def on_close(self):
 
-    ###################################################
-    # UI SETUP
-    ###################################################
+        try:
 
-    def setup_ui(self):
+            if self.is_recording:
 
-        central = QWidget()
+                self.recorder.stop()
 
-        self.setCentralWidget(central)
+        except Exception:
+            pass
 
-        root = QHBoxLayout()
-
-        central.setLayout(root)
-
-        ###################################################
-        # LEFT PANEL
-        ###################################################
-
-        left_panel = QVBoxLayout()
-
-        self.create_btn = QPushButton(
-            "Create Spreadsheet"
-        )
-
-        self.open_btn = QPushButton(
-            "Open Spreadsheet"
-        )
-
-        self.save_btn = QPushButton(
-            "Save Spreadsheet"
-        )
-
-        self.dictation_btn = QPushButton(
-            "Dictation Start"
-        )
-
-        self.term_btn = QPushButton(
-            "Term Recognition"
-        )
-
-        self.settings_btn = QPushButton(
-            "Settings"
-        )
-
-        buttons = [
-            self.create_btn,
-            self.open_btn,
-            self.save_btn,
-            self.dictation_btn,
-            self.term_btn,
-            self.settings_btn
-        ]
-
-        for b in buttons:
-
-            b.setMinimumHeight(45)
-
-            left_panel.addWidget(b)
-
-        left_panel.addStretch()
-
-        ###################################################
-        # LARGE START / STOP BUTTON
-        ###################################################
-
-        self.big_button = QPushButton("START")
-
-        self.big_button.setFixedSize(180, 180)
-
-        self.big_button.setStyleSheet("""
-        QPushButton {
-            border-radius: 90px;
-            background-color: #C0C0C0;
-            border: 3px outset gray;
-            font-size: 22px;
-            font-weight: bold;
-        }
-
-        QPushButton:pressed {
-            border: 3px inset gray;
-        }
-        """)
-
-        left_panel.addWidget(
-            self.big_button,
-            alignment=Qt.AlignCenter
-        )
-
-        root.addLayout(left_panel, 1)
-
-        ###################################################
-        # RIGHT PANEL
-        ###################################################
-
-        right_panel = QVBoxLayout()
-
-        ###################################################
-        # INSTRUCTIONS
-        ###################################################
-
-        self.instructions = QTextEdit()
-
-        self.instructions.setReadOnly(True)
-
-        self.instructions.setText(
-            "You can start in four quick steps:\n\n"
-            "1. Create or open spreadsheet\n"
-            "2. Select starting location\n"
-            "3. Press Dictation\n"
-            "4. Speak your text\n"
-        )
-
-        right_panel.addWidget(self.instructions)
-
-        ###################################################
-        # CURRENT POSITION
-        ###################################################
-
-        self.position_label = QLabel(
-            "Current Cell: A1"
-        )
-
-        self.position_label.setStyleSheet("""
-        font-size: 18px;
-        font-weight: bold;
-        """)
-
-        right_panel.addWidget(
-            self.position_label
-        )
-
-        ###################################################
-        # MOVEMENT BUTTONS
-        ###################################################
-
-        self.right_btn = QPushButton(
-            "Move Right"
-        )
-
-        self.left_btn = QPushButton(
-            "Move Left"
-        )
-
-        self.up_btn = QPushButton(
-            "Move Up"
-        )
-
-        self.down_btn = QPushButton(
-            "Move Down"
-        )
-
-        right_panel.addWidget(self.right_btn)
-        right_panel.addWidget(self.left_btn)
-        right_panel.addWidget(self.up_btn)
-        right_panel.addWidget(self.down_btn)
-
-        root.addLayout(right_panel, 4)
-
-        ###################################################
-        # SIGNALS
-        ###################################################
-
-        self.create_btn.clicked.connect(
-            self.create_spreadsheet
-        )
-
-        self.open_btn.clicked.connect(
-            self.open_spreadsheet
-        )
-
-        self.save_btn.clicked.connect(
-            self.save_spreadsheet
-        )
-
-        self.settings_btn.clicked.connect(
-            self.open_settings
-        )
-
-        self.term_btn.clicked.connect(
-            self.open_terms
-        )
-
-        self.dictation_btn.clicked.connect(
-            self.toggle_dictation
-        )
-
-        self.big_button.clicked.connect(
-            self.toggle_dictation
-        )
-
-        self.right_btn.clicked.connect(
-            selfmove_right
-        )
-
-        self.left_btn.clicked.connect(
-            self.move_left
-        )
-
-        self.up_btn.clicked.connect(
-            self.move_up
-        )
-
-        self.down_btn.clicked.connect(
-            self.move_down
-        )
-
-    ###################################################
-    # SPREADSHEET FUNCTIONS
-    ###################################################
-
-    def create_spreadsheet(self):
-
-        self.spreadsheet.create_document()
-
-        self.update_position()
-
-        QMessageBox.information(
-            self,
-            "Spreadsheet",
-            "New LibreOffice spreadsheet created."
-        )
-
-    def open_spreadsheet(self):
-
-        path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Open Spreadsheet",
-            "",
-            "Spreadsheet (*.ods *.xlsx)"
-        )
-
-        if not path:
-            return
-
-        self.spreadsheet.open_document(path)
-
-        self.update_position()
-
-        QMessageBox.information(
-            self,
-            "Spreadsheet",
-            "Spreadsheet opened."
-        )
-
-    def save_spreadsheet(self):
-
-        self.spreadsheet.save()
-
-        QMessageBox.information(
-            self,
-            "Spreadsheet",
-            "Spreadsheet saved."
-        )
-
-    ###################################################
-    # SETTINGS
-    ###################################################
-
-    def open_settings(self):
-
-        dialog = SettingsDialog(self)
-
-        dialog.exec()
-
-    ###################################################
-    # TERM RECOGNITION
-    ###################################################
-
-    def open_terms(self):
-
-        dialog = TermDialog(self)
-
-        dialog.exec()
-
-    ###################################################
-    # DICTATION
-    ###################################################
-
-    def toggle_dictation(self):
-
-        if self.dictation_thread is None:
-
-            self.start_dictation()
-
-        else:
-
-            self.stop_dictation()
-
-    def start_dictation(self):
-
-        self.dictation_thread = DictationThread()
-
-        self.dictation_thread.text_ready.connect(
-            self.handle_transcription
-        )
-
-        self.dictation_thread.start()
-
-        self.big_button.setText("STOP")
-
-    def stop_dictation(self):
-
-        if self.dictation_thread:
-
-            self.dictation_thread.stop()
-
-            self.dictation_thread.wait()
-
-            self.dictation_thread = None
-
-        self.big_button.setText("START")
-
-    ###################################################
-    # TRANSCRIPTION HANDLING
-    ###################################################
-
-    def handle_transcription(self, text):
-
-        print("Recognized:", text)
-
-        self.spreadsheet.write_current_cell(text)
-
-        self.spreadsheet.move_next()
-
-        self.update_position()
-
-    ###################################################
-    # MOVEMENT
-    ###################################################
-
-    def move_right(self):
-
-        self.spreadsheet.move_right()
-
-        self.update_position()
-
-    def move_left(self):
-
-        self.spreadsheet.move_left()
-
-        self.update_position()
-
-    def move_up(self):
-
-        self.spreadsheet.move_up()
-
-        self.update_position()
-
-    def move_down(self):
-
-        self.spreadsheet.move_down()
-
-        self.update_position()
-
-    ###################################################
-    # POSITION DISPLAY
-    ###################################################
-
-    def update_position(self):
-
-        position = self.spreadsheet.get_position_string()
-
-        self.position_label.setText(
-            f"Current Cell: {position}"
-        )
+        self.root.destroy()
