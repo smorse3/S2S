@@ -1,18 +1,54 @@
-import sounddevice as sd
-import numpy as np
-
-SAMPLE_RATE = 16000
+import threading
+import time
 
 
-def record_audio(seconds=3):
+class SpeechRecorder:
 
-    audio = sd.rec(
-        int(seconds * SAMPLE_RATE),
-        samplerate=SAMPLE_RATE,
-        channels=1,
-        dtype='float32'
-    )
+    def __init__(self, callback=None):
 
-    sd.wait()
+        self.callback = callback
 
-    return np.squeeze(audio)
+        self.is_recording = False
+
+    # ==========================================
+    # START
+    # ==========================================
+
+    def start(self):
+
+        self.is_recording = True
+
+        threading.Thread(
+            target=self.loop,
+            daemon=True
+        ).start()
+
+    # ==========================================
+    # STOP
+    # ==========================================
+
+    def stop(self):
+
+        self.is_recording = False
+
+    # ==========================================
+    # LOOP
+    # ==========================================
+
+    def loop(self):
+
+        counter = 1
+
+        while self.is_recording:
+
+            time.sleep(4)
+
+            text = (
+                f"Sample {counter}"
+            )
+
+            counter += 1
+
+            if self.callback:
+
+                self.callback(text)
