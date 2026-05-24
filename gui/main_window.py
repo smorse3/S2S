@@ -220,6 +220,30 @@ class MainWindow:
 
     def on_transcript(self, text):
 
+    self.root.after(
+        0,
+        lambda: self.process_transcript(text)
+    )
+
+        row = self.model.current_row
+        col = self.model.current_col
+
+        self.model.set_cell(
+            row,
+            col,
+            text
+        )
+
+        self.sheet.set_cell_data(
+            row,
+            col,
+            text
+        )
+
+        self.model.current_col += 1
+    
+    def process_transcript(self, text):
+
         row = self.model.current_row
         col = self.model.current_col
 

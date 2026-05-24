@@ -5,46 +5,81 @@ class SpreadsheetModel:
 
     def __init__(self):
 
-        self.df = pd.DataFrame()
+        # =====================================
+        # START WITH DEFAULT GRID
+        # =====================================
+
+        self.default_rows = 100
+        self.default_cols = 26
+
+        self.df = pd.DataFrame(
+            "",
+            index=range(self.default_rows),
+            columns=range(self.default_cols)
+        )
 
         self.current_row = 0
         self.current_col = 0
 
         self.conditional_rules = []
 
-    # ==========================================
+    # =====================================
     # ENSURE SIZE
-    # ==========================================
+    # =====================================
 
     def ensure_size(self, row, col):
 
-        while self.df.shape[0] <= row:
+        # ADD ROWS
 
-            self.df.loc[len(self.df)] = []
+        while row >= len(self.df.index):
 
-        while self.df.shape[1] <= col:
+            self.df.loc[len(self.df)] = [
+                ""
+                for _ in range(
+                    len(self.df.columns)
+                )
+            ]
 
-            self.df[self.df.shape[1]] = ""
+        # ADD COLUMNS
 
-    # ==========================================
-    # CELL ACCESS
-    # ==========================================
+        while col >= len(self.df.columns):
 
-    def set_cell(self, row, col, value):
+            self.df[
+                len(self.df.columns)
+            ] = ""
+
+    # =====================================
+    # SET CELL
+    # =====================================
+
+    def set_cell(
+        self,
+        row,
+        col,
+        value
+    ):
 
         self.ensure_size(row, col)
 
         self.df.iat[row, col] = value
 
-    def get_cell(self, row, col):
+    # =====================================
+    # GET CELL
+    # =====================================
+
+    def get_cell(
+        self,
+        row,
+        col
+    ):
 
         self.ensure_size(row, col)
 
         return self.df.iat[row, col]
 
-    # ==========================================
+    # =====================================
     # CONDITIONAL FORMATTING
-    # ==========================================
+    # =====================================
 
     def add_rule(self, rule):
 
