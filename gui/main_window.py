@@ -22,6 +22,10 @@ from spreadsheet.conditional_formatting import (
 
 class MainWindow:
 
+    # ==================================================
+    # INIT
+    # ==================================================
+
     def __init__(self, root):
 
         self.root = root
@@ -32,7 +36,15 @@ class MainWindow:
 
         self.root.geometry("1200x700")
 
+        # ----------------------------------------------
+        # MODEL
+        # ----------------------------------------------
+
         self.model = SpreadsheetModel()
+
+        # ----------------------------------------------
+        # RECORDER
+        # ----------------------------------------------
 
         self.recorder = SpeechRecorder(
             callback=self.on_transcript
@@ -40,41 +52,83 @@ class MainWindow:
 
         self.is_recording = False
 
+        # ----------------------------------------------
+        # UI
+        # ----------------------------------------------
+
         self.build_ui()
 
-    # ==========================================
+    # ==================================================
     # UI
-    # ==========================================
+    # ==================================================
 
     def build_ui(self):
 
+        # ----------------------------------------------
+        # MENU
+        # ----------------------------------------------
+
+        self.build_menu()
+
+        # ----------------------------------------------
+        # TOOLBAR
+        # ----------------------------------------------
+
         toolbar = tk.Frame(self.root)
 
-        toolbar.pack(fill=tk.X)
+        toolbar.pack(
+            fill=tk.X,
+            padx=5,
+            pady=5
+        )
+
+        # CREATE
 
         tk.Button(
             toolbar,
             text="Create Spreadsheet",
             command=self.create_spreadsheet
-        ).pack(side=tk.LEFT)
+        ).pack(
+            side=tk.LEFT,
+            padx=2
+        )
+
+        # OPEN
 
         tk.Button(
             toolbar,
             text="Open Spreadsheet",
             command=self.open_spreadsheet
-        ).pack(side=tk.LEFT)
+        ).pack(
+            side=tk.LEFT,
+            padx=2
+        )
+
+        # SAVE
 
         tk.Button(
             toolbar,
             text="Save Spreadsheet",
             command=self.save_spreadsheet
-        ).pack(side=tk.LEFT)
+        ).pack(
+            side=tk.LEFT,
+            padx=2
+        )
+
+        # CONDITIONAL FORMATTING
 
         tk.Button(
             toolbar,
             text="Add Highlight Rule",
             command=self.add_rule
-        ).pack(side=tk.LEFT)
+        ).pack(
+            side=tk.LEFT,
+            padx=2
+        )
+
+        # ----------------------------------------------
+        # LARGE DICTATION BUTTON
+        # ----------------------------------------------
 
         self.dictation_button = tk.Button(
             self.root,
@@ -88,24 +142,142 @@ class MainWindow:
 
         self.dictation_button.pack(
             fill=tk.X,
+            padx=10,
             pady=10
         )
 
+        # ----------------------------------------------
+        # STATUS LABEL
+        # ----------------------------------------------
+
+        self.status_label = tk.Label(
+            self.root,
+            text="Ready",
+            anchor="w"
+        )
+
+        self.status_label.pack(
+            fill=tk.X,
+            padx=10
+        )
+
+        # ----------------------------------------------
+        # SPREADSHEET GRID
+        # ----------------------------------------------
+
         self.sheet = Sheet(
             self.root,
-            data=[[""] * 20 for _ in range(50)]
+            data=[
+                ["" for _ in range(26)]
+                for _ in range(100)
+            ]
         )
 
         self.sheet.enable_bindings()
 
         self.sheet.pack(
             fill=tk.BOTH,
-            expand=True
+            expand=True,
+            padx=5,
+            pady=5
         )
 
-    # ==========================================
+        # SELECT FIRST CELL
+
+        self.sheet.select_cell(0, 0)
+
+    # ==================================================
+    # MENU
+    # ==================================================
+
+    def build_menu(self):
+
+        menubar = tk.Menu(self.root)
+
+        # ----------------------------------------------
+        # OPTIONS MENU
+        # ----------------------------------------------
+
+        options_menu = tk.Menu(
+            menubar,
+            tearoff=0
+        )
+
+        # MOVEMENT DIRECTION
+
+        self.direction_var = tk.StringVar(
+            value="right"
+        )
+
+        options_menu.add_radiobutton(
+            label="Move Right",
+            variable=self.direction_var,
+            value="right",
+            command=self.set_direction
+        )
+
+        options_menu.add_radiobutton(
+            label="Move Down",
+            variable=self.direction_var,
+            value="down",
+            command=self.set_direction
+        )
+
+        # WRAP OPTION
+
+        self.wrap_var = tk.BooleanVar(
+            value=True
+        )
+
+        options_menu.add_checkbutton(
+            label=(
+                "Auto Return to "
+                "First Empty Cell"
+            ),
+            variable=self.wrap_var,
+            command=self.set_wrap
+        )
+
+        menubar.add_cascade(
+            label="Options",
+            menu=options_menu
+        )
+
+        self.root.config(menu=menubar)
+
+    # ==================================================
+    # SETTINGS
+    # ==================================================
+
+    def set_direction(self):
+
+        self.model.direction = (
+            self.direction_var.get()
+        )
+
+        self.status_label.config(
+            text=(
+                f"Movement direction: "
+                f"{self.model.direction}"
+            )
+        )
+
+    def set_wrap(self):
+
+        self.model.wrap_enabled = (
+            self.wrap_var.get()
+        )
+
+        self.status_label.config(
+            text=(
+                "Auto return: "
+                f"{self.model.wrap_enabled}"
+            )
+        )
+
+    # ==================================================
     # CREATE
-    # ==========================================
+    # ==================================================
 
     def create_spreadsheet(self):
 
@@ -113,15 +285,24 @@ class MainWindow:
 
         self.refresh_sheet()
 
-    # ==========================================
+        self.sheet.select_cell(0, 0)
+
+        self.status_label.config(
+            text="New spreadsheet created."
+        )
+
+    # ==================================================
     # OPEN
-    # ==========================================
+    # ==================================================
 
     def open_spreadsheet(self):
 
         path = filedialog.askopenfilename(
             filetypes=[
-                ("Spreadsheet", "*.xlsx *.ods")
+                (
+                    "Spreadsheet Files",
+                    "*.xlsx *.ods"
+                )
             ]
         )
 
@@ -138,7 +319,7 @@ class MainWindow:
 
             self.refresh_sheet()
 
-            # APPLY EXISTING FORMATTING
+            # APPLY HIGHLIGHTS
 
             for (
                 row,
@@ -151,6 +332,10 @@ class MainWindow:
                     bg="yellow"
                 )
 
+            self.status_label.config(
+                text=f"Opened: {path}"
+            )
+
         except Exception as e:
 
             messagebox.showerror(
@@ -158,9 +343,9 @@ class MainWindow:
                 str(e)
             )
 
-    # ==========================================
+    # ==================================================
     # SAVE
-    # ==========================================
+    # ==================================================
 
     def save_spreadsheet(self):
 
@@ -174,21 +359,34 @@ class MainWindow:
         if not path:
             return
 
-        self.sync_sheet_to_model()
+        try:
 
-        SpreadsheetIO.save_xlsx(
-            self.model,
-            path
-        )
+            self.sync_sheet_to_model()
 
-        messagebox.showinfo(
-            "Saved",
-            "Spreadsheet saved successfully."
-        )
+            SpreadsheetIO.save_xlsx(
+                self.model,
+                path
+            )
 
-    # ==========================================
-    # DICTATION
-    # ==========================================
+            self.status_label.config(
+                text=f"Saved: {path}"
+            )
+
+            messagebox.showinfo(
+                "Saved",
+                "Spreadsheet saved successfully."
+            )
+
+        except Exception as e:
+
+            messagebox.showerror(
+                "Save Error",
+                str(e)
+            )
+
+    # ==================================================
+    # RECORDING
+    # ==================================================
 
     def toggle_recording(self):
 
@@ -203,6 +401,10 @@ class MainWindow:
                 bg="green"
             )
 
+            self.status_label.config(
+                text="Dictation stopped."
+            )
+
         else:
 
             self.recorder.start()
@@ -214,9 +416,13 @@ class MainWindow:
                 bg="red"
             )
 
-    # ==========================================
-    # TRANSCRIPT
-    # ==========================================
+            self.status_label.config(
+                text="Listening..."
+            )
+
+    # ==================================================
+    # THREAD SAFE CALLBACK
+    # ==================================================
 
     def on_transcript(self, text):
 
@@ -225,27 +431,36 @@ class MainWindow:
             lambda: self.process_transcript(text)
         )
 
-        row = self.model.current_row
-        col = self.model.current_col
+    # ==================================================
+    # PROCESS TRANSCRIPT
+    # ==================================================
 
-        self.model.set_cell(
-            row,
-            col,
-            text
-        )
-
-        self.sheet.set_cell_data(
-            row,
-            col,
-            text
-        )
-
-        self.model.current_col += 1
-    
     def process_transcript(self, text):
 
-        row = self.model.current_row
-        col = self.model.current_col
+        # ----------------------------------------------
+        # CURRENTLY SELECTED CELL
+        # ----------------------------------------------
+
+        selected = (
+            self.sheet.get_currently_selected()
+        )
+
+        if selected:
+
+            row = selected.row
+            col = selected.column
+
+            self.model.current_row = row
+            self.model.current_col = col
+
+        else:
+
+            row = self.model.current_row
+            col = self.model.current_col
+
+        # ----------------------------------------------
+        # WRITE CELL
+        # ----------------------------------------------
 
         self.model.set_cell(
             row,
@@ -259,11 +474,41 @@ class MainWindow:
             text
         )
 
-        self.model.current_col += 1
+        # ----------------------------------------------
+        # MOVE TO NEXT CELL
+        # ----------------------------------------------
 
-    # ==========================================
-    # RULES
-    # ==========================================
+        self.model.move_next()
+
+        # ----------------------------------------------
+        # UPDATE SELECTION
+        # ----------------------------------------------
+
+        self.sheet.select_cell(
+            self.model.current_row,
+            self.model.current_col
+        )
+
+        self.sheet.see(
+            self.model.current_row,
+            self.model.current_col
+        )
+
+        # ----------------------------------------------
+        # STATUS
+        # ----------------------------------------------
+
+        self.status_label.config(
+            text=(
+                f"Entered '{text}' "
+                f"at "
+                f"({row + 1}, {col + 1})"
+            )
+        )
+
+    # ==================================================
+    # CONDITIONAL FORMATTING
+    # ==================================================
 
     def add_rule(self):
 
@@ -275,29 +520,56 @@ class MainWindow:
 
         self.model.add_rule(rule)
 
-        messagebox.showinfo(
-            "Rule Added",
-            "Conditional formatting rule added."
+        self.status_label.config(
+            text=(
+                "Conditional formatting "
+                "rule added."
+            )
         )
 
-    # ==========================================
-    # REFRESH
-    # ==========================================
+        messagebox.showinfo(
+            "Rule Added",
+            "Highlight rule added."
+        )
+
+    # ==================================================
+    # REFRESH SHEET
+    # ==================================================
 
     def refresh_sheet(self):
 
-        data = self.model.df.fillna("").values.tolist()
+        data = (
+            self.model.df
+            .fillna("")
+            .values
+            .tolist()
+        )
 
         self.sheet.set_sheet_data(data)
 
-    # ==========================================
-    # SYNC
-    # ==========================================
+    # ==================================================
+    # SYNC TO MODEL
+    # ==================================================
 
     def sync_sheet_to_model(self):
 
-        data = self.sheet.get_sheet_data()
-
         import pandas as pd
 
+        data = self.sheet.get_sheet_data()
+
         self.model.df = pd.DataFrame(data)
+
+    # ==================================================
+    # CLOSE
+    # ==================================================
+
+    def on_close(self):
+
+        try:
+
+            self.recorder.stop()
+
+        except Exception:
+            pass
+
+        self.root.destroy()

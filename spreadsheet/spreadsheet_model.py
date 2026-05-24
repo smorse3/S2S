@@ -5,10 +5,6 @@ class SpreadsheetModel:
 
     def __init__(self):
 
-        # =====================================
-        # START WITH DEFAULT GRID
-        # =====================================
-
         self.default_rows = 100
         self.default_cols = 26
 
@@ -18,18 +14,26 @@ class SpreadsheetModel:
             columns=range(self.default_cols)
         )
 
+        # =====================================
+        # CURRENT ACTIVE CELL
+        # =====================================
+
         self.current_row = 0
         self.current_col = 0
 
-        self.conditional_rules = []
+        # =====================================
+        # MOVEMENT SETTINGS
+        # =====================================
+
+        self.direction = "right"
+
+        self.wrap_enabled = True
 
     # =====================================
     # ENSURE SIZE
     # =====================================
 
     def ensure_size(self, row, col):
-
-        # ADD ROWS
 
         while row >= len(self.df.index):
 
@@ -40,8 +44,6 @@ class SpreadsheetModel:
                 )
             ]
 
-        # ADD COLUMNS
-
         while col >= len(self.df.columns):
 
             self.df[
@@ -49,7 +51,7 @@ class SpreadsheetModel:
             ] = ""
 
     # =====================================
-    # SET CELL
+    # CELL ACCESS
     # =====================================
 
     def set_cell(
@@ -63,10 +65,6 @@ class SpreadsheetModel:
 
         self.df.iat[row, col] = value
 
-    # =====================================
-    # GET CELL
-    # =====================================
-
     def get_cell(
         self,
         row,
@@ -78,9 +76,99 @@ class SpreadsheetModel:
         return self.df.iat[row, col]
 
     # =====================================
-    # CONDITIONAL FORMATTING
+    # NAVIGATION
     # =====================================
 
-    def add_rule(self, rule):
+    def move_next(self):
 
-        self.conditional_rules.append(rule)
+        # ---------------------------------
+        # MOVE RIGHT
+        # ---------------------------------
+
+        if self.direction == "right":
+
+            next_col = (
+                self.current_col + 1
+            )
+
+            # WRAP TO NEXT ROW
+
+            if (
+                self.wrap_enabled
+                and
+                self._no_data_to_left(
+                    self.current_row,
+                    next_col
+                )
+            ):
+
+                self.current_row += 1
+                self.current_col = 0
+
+            else:
+
+                self.current_col = next_col
+
+        # ---------------------------------
+        # MOVE DOWN
+        # ---------------------------------
+
+        elif self.direction == "down":
+
+            next_row = (
+                self.current_row + 1
+            )
+
+            # WRAP TO NEXT COLUMN
+
+            if (
+                self.wrap_enabled
+                and
+                self._no_data_above(
+                    next_row,
+                    self.current_col
+                )
+            ):
+
+                self.current_col += 1
+                self.current_row = 0
+
+            else:
+
+                self.current_row = next_row
+
+    # =====================================
+    # CHECKS
+    # =====================================
+
+    def _no_data_to_left(
+        self,
+        row,
+        col
+    ):
+
+        for c in range(col):
+
+            value = self.df.iat[row, c]
+
+            if str(value).strip():
+
+                return False
+
+        return True
+
+    def _no_data_above(
+        self,
+        row,
+        col
+    ):
+
+        for r in range(row):
+
+            value = self.df.iat[r, col]
+
+            if str(value).strip():
+
+                return False
+
+        return True
