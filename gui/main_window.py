@@ -57,6 +57,19 @@ class MainWindow:
         # ----------------------------------------------
 
         self.build_ui()
+   
+    # ==================================================
+    # On cell select
+    # ==================================================
+    def on_cell_select(self, event=None):
+
+        selected = self.sheet.get_currently_selected()
+
+        if not selected:
+            return
+
+        self.model.current_row = selected.row
+        self.model.current_col = selected.column
 
     # ==================================================
     # UI
@@ -175,6 +188,10 @@ class MainWindow:
 
         self.sheet.enable_bindings()
 
+        self.sheet.extra_bindings([
+            ("cell_select", self.on_cell_select)
+        ])
+
         self.sheet.pack(
             fill=tk.BOTH,
             expand=True,
@@ -261,6 +278,7 @@ class MainWindow:
                 f"{self.model.direction}"
             )
         )
+        print("Direction:", self.model.direction)
 
     def set_wrap(self):
 
@@ -437,30 +455,16 @@ class MainWindow:
 
     def process_transcript(self, text):
 
-        # ----------------------------------------------
-        # CURRENTLY SELECTED CELL
-        # ----------------------------------------------
+        # ==========================================
+        # WRITE TO CURRENT MODEL POSITION
+        # ==========================================
 
-        selected = (
-            self.sheet.get_currently_selected()
-        )
+        row = self.model.current_row
+        col = self.model.current_col
 
-        if selected:
-
-            row = selected.row
-            col = selected.column
-
-            self.model.current_row = row
-            self.model.current_col = col
-
-        else:
-
-            row = self.model.current_row
-            col = self.model.current_col
-
-        # ----------------------------------------------
+        # ==========================================
         # WRITE CELL
-        # ----------------------------------------------
+        # ==========================================
 
         self.model.set_cell(
             row,
@@ -474,15 +478,15 @@ class MainWindow:
             text
         )
 
-        # ----------------------------------------------
+        # ==========================================
         # MOVE TO NEXT CELL
-        # ----------------------------------------------
+        # ==========================================
 
         self.model.move_next()
 
-        # ----------------------------------------------
-        # UPDATE SELECTION
-        # ----------------------------------------------
+        # ==========================================
+        # UPDATE UI SELECTION
+        # ==========================================
 
         self.sheet.select_cell(
             self.model.current_row,
@@ -494,9 +498,9 @@ class MainWindow:
             self.model.current_col
         )
 
-        # ----------------------------------------------
+        # ==========================================
         # STATUS
-        # ----------------------------------------------
+        # ==========================================
 
         self.status_label.config(
             text=(
@@ -505,7 +509,6 @@ class MainWindow:
                 f"({row + 1}, {col + 1})"
             )
         )
-
     # ==================================================
     # CONDITIONAL FORMATTING
     # ==================================================
