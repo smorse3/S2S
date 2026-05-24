@@ -90,23 +90,22 @@ class SpreadsheetModel:
             next_row = self.current_row
             next_col = self.current_col + 1
 
-            # ENSURE GRID SIZE
-
             self.ensure_size(
                 next_row,
                 next_col
             )
 
             # ---------------------------------
-            # AUTO RETURN LOGIC
+            # AUTO RETURN
             # ---------------------------------
 
             if self.wrap_enabled:
 
                 # CHECK:
-                # Are ALL cells ABOVE empty?
+                # DOES NEXT COLUMN
+                # ALREADY CONTAIN DATA ABOVE?
 
-                all_above_empty = True
+                column_has_data = False
 
                 for r in range(next_row):
 
@@ -117,14 +116,22 @@ class SpreadsheetModel:
 
                     if str(value).strip():
 
-                        all_above_empty = False
+                        column_has_data = True
                         break
+
+                # ---------------------------------
+                # NORMAL RIGHT MOVEMENT
+                # ---------------------------------
+
+                if column_has_data:
+
+                    self.current_col = next_col
 
                 # ---------------------------------
                 # WRAP TO NEXT ROW
                 # ---------------------------------
 
-                if all_above_empty:
+                else:
 
                     self.current_row += 1
 
@@ -147,12 +154,10 @@ class SpreadsheetModel:
 
                     self.current_col = target_col
 
-                    return
+            else:
 
-            # NORMAL RIGHT MOVEMENT
-
-            self.current_col = next_col
-
+                self.current_col = next_col
+                
         # ---------------------------------
         # MOVE DOWN
         # ---------------------------------
@@ -162,23 +167,22 @@ class SpreadsheetModel:
             next_row = self.current_row + 1
             next_col = self.current_col
 
-            # ENSURE GRID SIZE
-
             self.ensure_size(
                 next_row,
                 next_col
             )
 
             # ---------------------------------
-            # AUTO RETURN LOGIC
+            # AUTO RETURN
             # ---------------------------------
 
             if self.wrap_enabled:
 
                 # CHECK:
-                # Are ALL cells TO LEFT empty?
+                # DOES NEXT ROW
+                # ALREADY CONTAIN DATA TO LEFT?
 
-                all_left_empty = True
+                row_has_data = False
 
                 for c in range(next_col):
 
@@ -189,14 +193,22 @@ class SpreadsheetModel:
 
                     if str(value).strip():
 
-                        all_left_empty = False
+                        row_has_data = True
                         break
+
+                # ---------------------------------
+                # NORMAL DOWN MOVEMENT
+                # ---------------------------------
+
+                if row_has_data:
+
+                    self.current_row = next_row
 
                 # ---------------------------------
                 # WRAP TO NEXT COLUMN
                 # ---------------------------------
 
-                if all_left_empty:
+                else:
 
                     self.current_col += 1
 
@@ -219,8 +231,6 @@ class SpreadsheetModel:
 
                     self.current_row = target_row
 
-                    return
+            else:
 
-            # NORMAL DOWN MOVEMENT
-
-            self.current_row = next_row
+                self.current_row = next_row
