@@ -75,15 +75,15 @@ class SpreadsheetModel:
 
         return self.df.iat[row, col]
 
-    # =====================================
+       # =====================================
     # NAVIGATION
     # =====================================
 
     def move_next(self):
 
-        # ---------------------------------
+        # =================================
         # MOVE RIGHT
-        # ---------------------------------
+        # =================================
 
         if self.direction == "right":
 
@@ -103,24 +103,36 @@ class SpreadsheetModel:
 
                 # CHECK:
                 # DOES NEXT COLUMN
-                # ALREADY CONTAIN DATA ABOVE?
+                # CONTAIN DATA ABOVE CURRENT ROW?
 
                 column_has_data = False
 
-                for r in range(next_row):
+                for r in range(0, self.current_row):
 
                     value = self.get_cell(
                         r,
                         next_col
                     )
 
-                    if str(value).strip():
+                    # DEBUG
+                    print(
+                        "CHECK COLUMN:",
+                        r,
+                        next_col,
+                        value
+                    )
+
+                    if (
+                        value is not None
+                        and
+                        str(value).strip() != ""
+                    ):
 
                         column_has_data = True
                         break
 
                 # ---------------------------------
-                # NORMAL RIGHT MOVEMENT
+                # CONTINUE RIGHT
                 # ---------------------------------
 
                 if column_has_data:
@@ -135,7 +147,7 @@ class SpreadsheetModel:
 
                     self.current_row += 1
 
-                    # FIND FIRST EMPTY COLUMN
+                    # FIRST EMPTY COLUMN
 
                     target_col = 0
 
@@ -146,7 +158,11 @@ class SpreadsheetModel:
                             target_col
                         )
 
-                        if not str(value).strip():
+                        if (
+                            value is None
+                            or
+                            str(value).strip() == ""
+                        ):
 
                             break
 
@@ -157,10 +173,10 @@ class SpreadsheetModel:
             else:
 
                 self.current_col = next_col
-                
-        # ---------------------------------
+
+        # =================================
         # MOVE DOWN
-        # ---------------------------------
+        # =================================
 
         elif self.direction == "down":
 
@@ -180,24 +196,35 @@ class SpreadsheetModel:
 
                 # CHECK:
                 # DOES NEXT ROW
-                # ALREADY CONTAIN DATA TO LEFT?
+                # CONTAIN DATA TO LEFT?
 
                 row_has_data = False
 
-                for c in range(next_col):
+                for c in range(0, self.current_col):
 
                     value = self.get_cell(
                         next_row,
                         c
                     )
 
-                    if str(value).strip():
+                    print(
+                        "CHECK ROW:",
+                        next_row,
+                        c,
+                        value
+                    )
+
+                    if (
+                        value is not None
+                        and
+                        str(value).strip() != ""
+                    ):
 
                         row_has_data = True
                         break
 
                 # ---------------------------------
-                # NORMAL DOWN MOVEMENT
+                # CONTINUE DOWN
                 # ---------------------------------
 
                 if row_has_data:
@@ -212,7 +239,7 @@ class SpreadsheetModel:
 
                     self.current_col += 1
 
-                    # FIND FIRST EMPTY ROW
+                    # FIRST EMPTY ROW
 
                     target_row = 0
 
@@ -223,7 +250,11 @@ class SpreadsheetModel:
                             self.current_col
                         )
 
-                        if not str(value).strip():
+                        if (
+                            value is None
+                            or
+                            str(value).strip() == ""
+                        ):
 
                             break
 

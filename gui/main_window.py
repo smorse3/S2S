@@ -482,6 +482,8 @@ class MainWindow:
         # MOVE TO NEXT CELL
         # ==========================================
 
+        self.sync_sheet_to_model()
+        
         self.model.move_next()
 
         # ==========================================
