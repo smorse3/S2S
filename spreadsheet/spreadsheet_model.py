@@ -87,27 +87,71 @@ class SpreadsheetModel:
 
         if self.direction == "right":
 
-            next_col = (
-                self.current_col + 1
+            next_row = self.current_row
+            next_col = self.current_col + 1
+
+            # ENSURE GRID SIZE
+
+            self.ensure_size(
+                next_row,
+                next_col
             )
 
-            # WRAP TO NEXT ROW
+            # ---------------------------------
+            # AUTO RETURN LOGIC
+            # ---------------------------------
 
-            if (
-                self.wrap_enabled
-                and
-                self._no_data_to_left(
-                    self.current_row,
-                    next_col
-                )
-            ):
+            if self.wrap_enabled:
 
-                self.current_row += 1
-                self.current_col = 0
+                # CHECK:
+                # Are ALL cells ABOVE empty?
 
-            else:
+                all_above_empty = True
 
-                self.current_col = next_col
+                for r in range(next_row):
+
+                    value = self.get_cell(
+                        r,
+                        next_col
+                    )
+
+                    if str(value).strip():
+
+                        all_above_empty = False
+                        break
+
+                # ---------------------------------
+                # WRAP TO NEXT ROW
+                # ---------------------------------
+
+                if all_above_empty:
+
+                    self.current_row += 1
+
+                    # FIND FIRST EMPTY COLUMN
+
+                    target_col = 0
+
+                    while True:
+
+                        value = self.get_cell(
+                            self.current_row,
+                            target_col
+                        )
+
+                        if not str(value).strip():
+
+                            break
+
+                        target_col += 1
+
+                    self.current_col = target_col
+
+                    return
+
+            # NORMAL RIGHT MOVEMENT
+
+            self.current_col = next_col
 
         # ---------------------------------
         # MOVE DOWN
@@ -115,60 +159,68 @@ class SpreadsheetModel:
 
         elif self.direction == "down":
 
-            next_row = (
-                self.current_row + 1
+            next_row = self.current_row + 1
+            next_col = self.current_col
+
+            # ENSURE GRID SIZE
+
+            self.ensure_size(
+                next_row,
+                next_col
             )
 
-            # WRAP TO NEXT COLUMN
+            # ---------------------------------
+            # AUTO RETURN LOGIC
+            # ---------------------------------
 
-            if (
-                self.wrap_enabled
-                and
-                self._no_data_above(
-                    next_row,
-                    self.current_col
-                )
-            ):
+            if self.wrap_enabled:
 
-                self.current_col += 1
-                self.current_row = 0
+                # CHECK:
+                # Are ALL cells TO LEFT empty?
 
-            else:
+                all_left_empty = True
 
-                self.current_row = next_row
+                for c in range(next_col):
 
-    # =====================================
-    # CHECKS
-    # =====================================
+                    value = self.get_cell(
+                        next_row,
+                        c
+                    )
 
-    def _no_data_to_left(
-        self,
-        row,
-        col
-    ):
+                    if str(value).strip():
 
-        for c in range(col):
+                        all_left_empty = False
+                        break
 
-            value = self.df.iat[row, c]
+                # ---------------------------------
+                # WRAP TO NEXT COLUMN
+                # ---------------------------------
 
-            if str(value).strip():
+                if all_left_empty:
 
-                return False
+                    self.current_col += 1
 
-        return True
+                    # FIND FIRST EMPTY ROW
 
-    def _no_data_above(
-        self,
-        row,
-        col
-    ):
+                    target_row = 0
 
-        for r in range(row):
+                    while True:
 
-            value = self.df.iat[r, col]
+                        value = self.get_cell(
+                            target_row,
+                            self.current_col
+                        )
 
-            if str(value).strip():
+                        if not str(value).strip():
 
-                return False
+                            break
 
-        return True
+                        target_row += 1
+
+                    self.current_row = target_row
+
+                    return
+
+            # NORMAL DOWN MOVEMENT
+
+            self.current_row = next_row
