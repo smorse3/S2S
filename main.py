@@ -1,21 +1,20 @@
-import sys
-
-from PySide6.QtWidgets import QApplication
+import tkinter as tk
 
 from gui.main_window import MainWindow
 from gui.styles import apply_win95_style
 
 
 def main():
-    app = QApplication(sys.argv)
 
-    apply_win95_style(app)
+    root = tk.Tk()
 
-    window = MainWindow()
-    window.show()
+    apply_win95_style(root)
 
-    sys.exit(app.exec())
+    app = MainWindow(root)
+
+    root.mainloop()
 
 
 if __name__ == "__main__":
+
     main()
