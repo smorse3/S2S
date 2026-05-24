@@ -28,6 +28,12 @@ class SpreadsheetModel:
         self.direction = "right"
 
         self.wrap_enabled = True
+        
+        # =====================================
+        # CONDITIONAL FORMATTING
+        # =====================================
+
+        self.conditional_rules = []
 
     # =====================================
     # ENSURE SIZE
@@ -265,3 +271,10 @@ class SpreadsheetModel:
             else:
 
                 self.current_row = next_row
+    # =====================================
+    # CONDITIONAL FORMATTING
+    # =====================================
+
+    def add_rule(self, rule):
+
+        self.conditional_rules.append(rule)
