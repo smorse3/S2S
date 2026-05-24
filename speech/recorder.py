@@ -1,5 +1,6 @@
 import threading
-import time
+
+import speech_recognition as sr
 
 
 class SpeechRecorder:
@@ -10,9 +11,7 @@ class SpeechRecorder:
 
         self.is_recording = False
 
-    # ==========================================
-    # START
-    # ==========================================
+        self.recognizer = sr.Recognizer()
 
     def start(self):
 
@@ -23,32 +22,33 @@ class SpeechRecorder:
             daemon=True
         ).start()
 
-    # ==========================================
-    # STOP
-    # ==========================================
-
     def stop(self):
 
         self.is_recording = False
 
-    # ==========================================
-    # LOOP
-    # ==========================================
-
     def loop(self):
 
-        counter = 1
+        with sr.Microphone() as source:
 
-        while self.is_recording:
+            while self.is_recording:
 
-            time.sleep(4)
+                try:
 
-            text = (
-                f"Sample {counter}"
-            )
+                    audio = (
+                        self.recognizer.listen(
+                            source
+                        )
+                    )
 
-            counter += 1
+                    text = (
+                        self.recognizer
+                        .recognize_google(audio)
+                    )
 
-            if self.callback:
+                    if self.callback:
 
-                self.callback(text)
+                        self.callback(text)
+
+                except Exception as e:
+
+                    print(e)

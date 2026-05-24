@@ -225,8 +225,8 @@ class MainWindow:
             lambda: self.process_transcript(text)
         )
 
-            row = self.model.current_row
-            col = self.model.current_col
+        row = self.model.current_row
+        col = self.model.current_col
 
         self.model.set_cell(
             row,
