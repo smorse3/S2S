@@ -295,3 +295,25 @@ class SpreadsheetModel:
                 return rule.color
 
         return None
+    
+    # =====================================
+    # RULES
+    # =====================================
+
+    def add_rule(self, rule):
+
+        self.conditional_rules.append(rule)
+
+    def remove_rule(self, index):
+
+        if (
+            0
+            <= index
+            < len(self.conditional_rules)
+        ):
+
+            del self.conditional_rules[index]
+
+    def clear_rules(self):
+
+        self.conditional_rules.clear()

@@ -1,21 +1,21 @@
+from dataclasses import dataclass
+
+
+@dataclass
 class ConditionalFormattingRule:
 
-    def __init__(
-        self,
-        min_value,
-        max_value,
-        color,
-        mode="within"
-    ):
+    rule_type: str
 
-        self.min_value = min_value
-        self.max_value = max_value
+    min_value: float = None
+    max_value: float = None
 
-        self.color = color
+    value: str = None
 
-        # within / outside
+    color: str = "#FFFF00"
 
-        self.mode = mode
+    target_range: str = "A1:Z100"
+
+    stop_if_true: bool = False
 
     # =====================================
     # MATCH
@@ -25,24 +25,98 @@ class ConditionalFormattingRule:
 
         try:
 
-            number = float(value)
+            numeric = float(value)
 
         except Exception:
 
-            return False
+            numeric = None
 
-        within = (
-            self.min_value
-            <= number
-            <= self.max_value
-        )
+        # ---------------------------------
+        # BETWEEN
+        # ---------------------------------
 
-        if self.mode == "within":
+        if self.rule_type == "between":
 
-            return within
+            if numeric is None:
+                return False
 
-        elif self.mode == "outside":
+            return (
+                self.min_value
+                <= numeric
+                <= self.max_value
+            )
 
-            return not within
+        # ---------------------------------
+        # NOT BETWEEN
+        # ---------------------------------
+
+        elif self.rule_type == "not_between":
+
+            if numeric is None:
+                return False
+
+            return not (
+                self.min_value
+                <= numeric
+                <= self.max_value
+            )
+
+        # ---------------------------------
+        # GREATER THAN
+        # ---------------------------------
+
+        elif self.rule_type == "greater_than":
+
+            if numeric is None:
+                return False
+
+            return numeric > self.min_value
+
+        # ---------------------------------
+        # LESS THAN
+        # ---------------------------------
+
+        elif self.rule_type == "less_than":
+
+            if numeric is None:
+                return False
+
+            return numeric < self.min_value
+
+        # ---------------------------------
+        # EQUAL
+        # ---------------------------------
+
+        elif self.rule_type == "equal":
+
+            return str(value) == str(self.value)
+
+        # ---------------------------------
+        # TEXT CONTAINS
+        # ---------------------------------
+
+        elif self.rule_type == "contains":
+
+            return (
+                self.value.lower()
+                in
+                str(value).lower()
+            )
+
+        # ---------------------------------
+        # BLANK
+        # ---------------------------------
+
+        elif self.rule_type == "blank":
+
+            return str(value).strip() == ""
+
+        # ---------------------------------
+        # NOT BLANK
+        # ---------------------------------
+
+        elif self.rule_type == "not_blank":
+
+            return str(value).strip() != ""
 
         return False

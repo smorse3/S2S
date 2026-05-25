@@ -9,6 +9,8 @@ from tksheet import Sheet
 
 from speech.recorder import SpeechRecorder
 
+from openpyxl.utils.cell import range_boundaries
+
 from spreadsheet.spreadsheet_model import (
     SpreadsheetModel
 )
@@ -21,6 +23,9 @@ from spreadsheet.conditional_formatting import (
     ConditionalFormattingRule
 )
 
+from spreadsheet.conditional_rule_manager import (
+    ConditionalRuleManager
+)
 
 class MainWindow:
 
@@ -536,155 +541,54 @@ class MainWindow:
     # ADD CONDITIONAL RULE
     # =====================================
 
-    def add_rule(self):
+        def add_rule(self):
 
-        # ---------------------------------
-        # MIN VALUE
-        # ---------------------------------
-
-        min_value = simpledialog.askfloat(
-            "Minimum Value",
-            "Enter minimum value:"
-        )
-
-        if min_value is None:
-            return
-
-        # ---------------------------------
-        # MAX VALUE
-        # ---------------------------------
-
-        max_value = simpledialog.askfloat(
-            "Maximum Value",
-            "Enter maximum value:"
-        )
-
-        if max_value is None:
-            return
-
-        # ---------------------------------
-        # MODE
-        # ---------------------------------
-
-        mode_window = tk.Toplevel(self.root)
-
-        mode_window.title(
-            "Rule Type"
-        )
-
-        mode_var = tk.StringVar(
-            value="within"
-        )
-
-        tk.Label(
-            mode_window,
-            text="Highlight values:"
-        ).pack(pady=5)
-
-        tk.Radiobutton(
-            mode_window,
-            text="Within Range",
-            variable=mode_var,
-            value="within"
-        ).pack(anchor="w")
-
-        tk.Radiobutton(
-            mode_window,
-            text="Outside Range",
-            variable=mode_var,
-            value="outside"
-        ).pack(anchor="w")
-
-        result = {}
-
-        def confirm():
-
-            result["mode"] = (
-                mode_var.get()
+            ConditionalRuleManager(
+                self.root,
+                self.model,
+                self.apply_conditional_formatting
             )
-
-            mode_window.destroy()
-
-        tk.Button(
-            mode_window,
-            text="OK",
-            command=confirm
-        ).pack(pady=10)
-
-        self.root.wait_window(mode_window)
-
-        if "mode" not in result:
-            return
-
-        # ---------------------------------
-        # COLOR
-        # ---------------------------------
-
-        color = colorchooser.askcolor(
-            title="Select Highlight Color"
-        )[1]
-
-        if not color:
-            return
-
-        # ---------------------------------
-        # CREATE RULE
-        # ---------------------------------
-
-        rule = ConditionalFormattingRule(
-            min_value=min_value,
-            max_value=max_value,
-            color=color,
-            mode=result["mode"]
-        )
-
-        self.model.add_rule(rule)
-
-        self.apply_conditional_formatting()
-
-        messagebox.showinfo(
-            "Rule Added",
-            "Conditional formatting rule added."
-        )
         
     # =====================================
     # APPLY CONDITIONAL FORMATTING
     # =====================================
 
-    def apply_conditional_formatting(self):
+        def apply_conditional_formatting(self):
 
-        rows = len(self.model.df.index)
-        cols = len(self.model.df.columns)
+            self.sheet.dehighlight_all()
 
-        for row in range(rows):
+            for rule in (
+                self.model.conditional_rules
+            ):
 
-            for col in range(cols):
-
-                value = self.model.get_cell(
-                    row,
-                    col
-                )
-
-                color = (
-                    self.model.get_matching_color(
-                        value
+                min_col, min_row, max_col, max_row = (
+                    range_boundaries(
+                        rule.target_range
                     )
                 )
 
-                if color:
+                for row in range(
+                    min_row - 1,
+                    max_row
+                ):
 
-                    self.sheet.highlight_cells(
-                        row=row,
-                        column=col,
-                        bg=color
-                    )
+                    for col in range(
+                        min_col - 1,
+                        max_col
+                    ):
 
-                else:
+                        value = self.model.get_cell(
+                            row,
+                            col
+                        )
 
-                    self.sheet.dehighlight_cells(
-                        row=row,
-                        column=col
-                    )
+                        if rule.matches(value):
+
+                            self.sheet.highlight_cells(
+                                row=row,
+                                column=col,
+                                bg=rule.color
+                            )
 
     # ==================================================
     # REFRESH SHEET

@@ -7,6 +7,10 @@ from openpyxl import load_workbook
 
 from openpyxl.styles import PatternFill
 
+from openpyxl.formatting.rule import (
+    CellIsRule,
+    FormulaRule
+)
 
 class SpreadsheetIO:
 
@@ -83,6 +87,112 @@ class SpreadsheetIO:
         ws["ZZ1"] = json.dumps(rules)
 
         wb.save(path)
+        
+        # =================================
+        # CONDITIONAL FORMATTING
+        # =================================
+
+        for rule in model.conditional_rules:
+
+            fill = PatternFill(
+                start_color=(
+                    rule.color.replace("#", "")
+                ),
+                end_color=(
+                    rule.color.replace("#", "")
+                ),
+                fill_type="solid"
+            )
+
+            # -----------------------------
+            # BETWEEN
+            # -----------------------------
+
+            if rule.rule_type == "between":
+
+                ws.conditional_formatting.add(
+
+                    rule.target_range,
+
+                    CellIsRule(
+
+                        operator="between",
+
+                        formula=[
+                            str(rule.min_value),
+                            str(rule.max_value)
+                        ],
+
+                        fill=fill
+                    )
+                )
+
+            # -----------------------------
+            # NOT BETWEEN
+            # -----------------------------
+
+            elif rule.rule_type == "not_between":
+
+                ws.conditional_formatting.add(
+
+                    rule.target_range,
+
+                    CellIsRule(
+
+                        operator="notBetween",
+
+                        formula=[
+                            str(rule.min_value),
+                            str(rule.max_value)
+                        ],
+
+                        fill=fill
+                    )
+                )
+
+            # -----------------------------
+            # GREATER THAN
+            # -----------------------------
+
+            elif rule.rule_type == "greater_than":
+
+                ws.conditional_formatting.add(
+
+                    rule.target_range,
+
+                    CellIsRule(
+
+                        operator="greaterThan",
+
+                        formula=[
+                            str(rule.min_value)
+                        ],
+
+                        fill=fill
+                    )
+                )
+
+            # -----------------------------
+            # LESS THAN
+            # -----------------------------
+
+            elif rule.rule_type == "less_than":
+
+                ws.conditional_formatting.add(
+
+                    rule.target_range,
+
+                    CellIsRule(
+
+                        operator="lessThan",
+
+                        formula=[
+                            str(rule.min_value)
+                        ],
+
+                        fill=fill
+                    )
+                )
 
     # =====================================
     # LOAD XLSX
