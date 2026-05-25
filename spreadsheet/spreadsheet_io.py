@@ -168,17 +168,31 @@ class SpreadsheetIO:
 
         wb = load_workbook(path)
 
-        # -----------------------------
-        # LOAD MAIN SHEET
-        # -----------------------------
+        # ================================
+        # LOAD SHEET CLEANLY (NO PAD SHIFT)
+        # ================================
         ws = wb["Sheet1"]
 
         data = []
 
         for row in ws.iter_rows(values_only=True):
+
+            # skip fully empty rows
+            if all(cell is None for cell in row):
+                continue
+
             data.append(list(row))
 
-        df = pd.DataFrame(data)
+        # normalize rectangular grid
+        max_cols = max(len(r) for r in data) if data else 1
+
+        normalized = []
+        for r in data:
+            r = list(r)
+            r += [None] * (max_cols - len(r))
+            normalized.append(r)
+
+        df = pd.DataFrame(normalized)
 
         # -----------------------------
         # LOAD CONDITIONAL RULES
