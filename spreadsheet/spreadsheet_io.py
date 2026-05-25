@@ -15,35 +15,55 @@ class SpreadsheetIO:
     @staticmethod
     def save_xlsx(model, path):
 
+        from openpyxl import Workbook
+        from openpyxl.styles import PatternFill
+        from openpyxl.formatting.rule import CellIsRule
+
         wb = Workbook()
         ws = wb.active
         ws.title = "Sheet1"
 
-        # -----------------------------
-        # WRITE GRID DATA
-        # -----------------------------
-        df = model.df
+        # =========================================
+        # DETERMINE GRID SIZE SAFELY
+        # =========================================
+        try:
+            df = model.df
+            max_rows = max(len(df.index), 1)
+            max_cols = max(len(df.columns), 1)
+        except Exception:
+            max_rows = 1
+            max_cols = 1
+            df = model.df
 
-        for r_idx, row in enumerate(df.values, start=1):
-            for c_idx, value in enumerate(row, start=1):
+        # =========================================
+        # WRITE ALL CELL VALUES (SAFE GRID SCAN)
+        # =========================================
+        for r in range(max_rows):
+            for c in range(max_cols):
+
+                try:
+                    value = model.get_cell(r, c)
+                except Exception:
+                    value = None
+
                 ws.cell(
-                    row=r_idx,
-                    column=c_idx,
+                    row=r + 1,
+                    column=c + 1,
                     value=value
                 )
 
-        # -----------------------------
+        # =========================================
         # APPLY EXCEL CONDITIONAL FORMATTING
-        # -----------------------------
+        # =========================================
         for rule in model.conditional_rules:
 
-            fill = PatternFill(
-                start_color=rule.color.replace("#", ""),
-                end_color=rule.color.replace("#", ""),
-                fill_type="solid"
-            )
-
             try:
+
+                fill = PatternFill(
+                    start_color=rule.color.replace("#", ""),
+                    end_color=rule.color.replace("#", ""),
+                    fill_type="solid"
+                )
 
                 if rule.rule_type == "between":
 
@@ -95,12 +115,23 @@ class SpreadsheetIO:
                         )
                     )
 
-            except Exception as e:
-                print("Conditional formatting export error:", e)
+                elif rule.rule_type == "equal":
 
-        # -----------------------------
-        # WRITE RULE METADATA SHEET
-        # -----------------------------
+                    ws.conditional_formatting.add(
+                        rule.target_range,
+                        CellIsRule(
+                            operator="equal",
+                            formula=[str(rule.value)],
+                            fill=fill
+                        )
+                    )
+
+            except Exception as e:
+                print("CF export error:", e)
+
+        # =========================================
+        # WRITE RULE METADATA (HIDDEN SHEET)
+        # =========================================
         rules_ws = wb.create_sheet("__S2S_RULES__")
         rules_ws.sheet_state = "hidden"
 
@@ -119,13 +150,13 @@ class SpreadsheetIO:
 
         for i, rule in enumerate(model.conditional_rules, start=2):
 
-            rules_ws.cell(row=i, column=1, value=rule.rule_type)
-            rules_ws.cell(row=i, column=2, value=rule.min_value)
-            rules_ws.cell(row=i, column=3, value=rule.max_value)
-            rules_ws.cell(row=i, column=4, value=rule.value)
-            rules_ws.cell(row=i, column=5, value=rule.color)
-            rules_ws.cell(row=i, column=6, value=rule.target_range)
-            rules_ws.cell(row=i, column=7, value=rule.stop_if_true)
+            rules_ws.cell(i, 1, rule.rule_type)
+            rules_ws.cell(i, 2, rule.min_value)
+            rules_ws.cell(i, 3, rule.max_value)
+            rules_ws.cell(i, 4, rule.value)
+            rules_ws.cell(i, 5, rule.color)
+            rules_ws.cell(i, 6, rule.target_range)
+            rules_ws.cell(i, 7, rule.stop_if_true)
 
         wb.save(path)
 
