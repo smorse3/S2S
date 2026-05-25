@@ -322,64 +322,17 @@ class MainWindow:
 
     def open_spreadsheet(self):
 
-        path = filedialog.askopenfilename(
-            filetypes=[
-                (
-                    "Spreadsheet Files",
-                    "*.xlsx *.ods"
-                )
-            ]
-        )
+        path = filedialog.askopenfilename()
 
-        if not path:
-            return
+        df, rules = SpreadsheetIO.load(path)
 
-        try:
+        self.model.df = df
 
-            df, rules = SpreadsheetIO.load(path)
+        self.model.clear_rules()
+        for rule in rules:
+            self.model.add_rule(rule)
 
-            self.model.df = df
-
-            self.model.clear_rules()
-
-            for rule in rules:
-
-                self.model.add_rule(rule)
-
-                rule = ConditionalFormattingRule(
-                    min_value=r["min"],
-                    max_value=r["max"],
-                    color=r["color"],
-                    mode=r["mode"]
-                )
-
-                self.model.add_rule(rule)
-
-            self.refresh_sheet()
-
-            # APPLY HIGHLIGHTS
-
-            for (
-                row,
-                col
-            ), color in formatting.items():
-
-                self.sheet.highlight_cells(
-                    row=row,
-                    column=col,
-                    bg="yellow"
-                )
-
-            self.status_label.config(
-                text=f"Opened: {path}"
-            )
-
-        except Exception as e:
-
-            messagebox.showerror(
-                "Open Error",
-                str(e)
-            )
+        self.apply_conditional_formatting()
 
     # ==================================================
     # SAVE
