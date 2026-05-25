@@ -469,6 +469,104 @@ class MainWindow:
             self.model,
             self.apply_conditional_formatting
         )
+        
+    # =====================================
+    # APPLY CONDITIONAL FORMATTING
+    # =====================================
+
+    def apply_conditional_formatting(self):
+
+        # ---------------------------------
+        # CLEAR EXISTING HIGHLIGHTS
+        # ---------------------------------
+
+        try:
+
+            self.sheet.dehighlight_all()
+
+        except Exception:
+
+            pass
+
+        # ---------------------------------
+        # APPLY RULES
+        # ---------------------------------
+
+        for rule in self.model.conditional_rules:
+
+            try:
+
+                from openpyxl.utils.cell import (
+                    range_boundaries
+                )
+
+                (
+                    min_col,
+                    min_row,
+                    max_col,
+                    max_row
+                ) = range_boundaries(
+                    rule.target_range
+                )
+
+            except Exception:
+
+                continue
+
+            # ---------------------------------
+            # SCAN RANGE
+            # ---------------------------------
+
+            for row in range(
+                min_row - 1,
+                max_row
+            ):
+
+                for col in range(
+                    min_col - 1,
+                    max_col
+                ):
+
+                    try:
+
+                        value = self.model.get_cell(
+                            row,
+                            col
+                        )
+
+                    except Exception:
+
+                        continue
+
+                    # -------------------------
+                    # MATCH RULE
+                    # -------------------------
+
+                    try:
+
+                        matches = (
+                            rule.matches(value)
+                        )
+
+                    except Exception:
+
+                        matches = False
+
+                    if matches:
+
+                        try:
+
+                            self.sheet.highlight_cells(
+
+                                row=row,
+                                column=col,
+                                bg=rule.color
+
+                            )
+
+                        except Exception:
+
+                            pass
 
     # ==================================================
     # THREAD SAFE CALLBACK
