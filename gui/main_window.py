@@ -2,6 +2,8 @@ import tkinter as tk
 
 from tkinter import filedialog
 from tkinter import messagebox
+from tkinter import colorchooser
+from tkinter import simpledialog
 
 from tksheet import Sheet
 
@@ -329,11 +331,24 @@ class MainWindow:
 
         try:
 
-            df, formatting = (
+            df, formatting, rules = (
                 SpreadsheetIO.load(path)
             )
 
             self.model.df = df
+
+            self.model.clear_rules()
+
+            for r in rules:
+
+                rule = ConditionalFormattingRule(
+                    min_value=r["min"],
+                    max_value=r["max"],
+                    color=r["color"],
+                    mode=r["mode"]
+                )
+
+                self.model.add_rule(rule)
 
             self.refresh_sheet()
 
@@ -477,6 +492,8 @@ class MainWindow:
             col,
             text
         )
+        
+        self.apply_conditional_formatting()
 
         # ==========================================
         # MOVE TO NEXT CELL
@@ -515,27 +532,159 @@ class MainWindow:
     # CONDITIONAL FORMATTING
     # ==================================================
 
+    # =====================================
+    # ADD CONDITIONAL RULE
+    # =====================================
+
     def add_rule(self):
 
+        # ---------------------------------
+        # MIN VALUE
+        # ---------------------------------
+
+        min_value = simpledialog.askfloat(
+            "Minimum Value",
+            "Enter minimum value:"
+        )
+
+        if min_value is None:
+            return
+
+        # ---------------------------------
+        # MAX VALUE
+        # ---------------------------------
+
+        max_value = simpledialog.askfloat(
+            "Maximum Value",
+            "Enter maximum value:"
+        )
+
+        if max_value is None:
+            return
+
+        # ---------------------------------
+        # MODE
+        # ---------------------------------
+
+        mode_window = tk.Toplevel(self.root)
+
+        mode_window.title(
+            "Rule Type"
+        )
+
+        mode_var = tk.StringVar(
+            value="within"
+        )
+
+        tk.Label(
+            mode_window,
+            text="Highlight values:"
+        ).pack(pady=5)
+
+        tk.Radiobutton(
+            mode_window,
+            text="Within Range",
+            variable=mode_var,
+            value="within"
+        ).pack(anchor="w")
+
+        tk.Radiobutton(
+            mode_window,
+            text="Outside Range",
+            variable=mode_var,
+            value="outside"
+        ).pack(anchor="w")
+
+        result = {}
+
+        def confirm():
+
+            result["mode"] = (
+                mode_var.get()
+            )
+
+            mode_window.destroy()
+
+        tk.Button(
+            mode_window,
+            text="OK",
+            command=confirm
+        ).pack(pady=10)
+
+        self.root.wait_window(mode_window)
+
+        if "mode" not in result:
+            return
+
+        # ---------------------------------
+        # COLOR
+        # ---------------------------------
+
+        color = colorchooser.askcolor(
+            title="Select Highlight Color"
+        )[1]
+
+        if not color:
+            return
+
+        # ---------------------------------
+        # CREATE RULE
+        # ---------------------------------
+
         rule = ConditionalFormattingRule(
-            column=0,
-            operator=">",
-            value=10
+            min_value=min_value,
+            max_value=max_value,
+            color=color,
+            mode=result["mode"]
         )
 
         self.model.add_rule(rule)
 
-        self.status_label.config(
-            text=(
-                "Conditional formatting "
-                "rule added."
-            )
-        )
+        self.apply_conditional_formatting()
 
         messagebox.showinfo(
             "Rule Added",
-            "Highlight rule added."
+            "Conditional formatting rule added."
         )
+        
+    # =====================================
+    # APPLY CONDITIONAL FORMATTING
+    # =====================================
+
+    def apply_conditional_formatting(self):
+
+        rows = len(self.model.df.index)
+        cols = len(self.model.df.columns)
+
+        for row in range(rows):
+
+            for col in range(cols):
+
+                value = self.model.get_cell(
+                    row,
+                    col
+                )
+
+                color = (
+                    self.model.get_matching_color(
+                        value
+                    )
+                )
+
+                if color:
+
+                    self.sheet.highlight_cells(
+                        row=row,
+                        column=col,
+                        bg=color
+                    )
+
+                else:
+
+                    self.sheet.dehighlight_cells(
+                        row=row,
+                        column=col
+                    )
 
     # ==================================================
     # REFRESH SHEET

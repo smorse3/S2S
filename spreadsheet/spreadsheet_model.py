@@ -81,7 +81,7 @@ class SpreadsheetModel:
 
         return self.df.iat[row, col]
 
-       # =====================================
+    # =====================================
     # NAVIGATION
     # =====================================
 
@@ -278,3 +278,20 @@ class SpreadsheetModel:
     def add_rule(self, rule):
 
         self.conditional_rules.append(rule)
+
+    def clear_rules(self):
+
+        self.conditional_rules.clear()
+
+    def get_matching_color(
+        self,
+        value
+    ):
+
+        for rule in self.conditional_rules:
+
+            if rule.matches(value):
+
+                return rule.color
+
+        return None

@@ -1,7 +1,8 @@
+import json
+
 import pandas as pd
 
-from pyexcel_ods3 import get_data
-
+from openpyxl import Workbook
 from openpyxl import load_workbook
 
 from openpyxl.styles import PatternFill
@@ -9,125 +10,145 @@ from openpyxl.styles import PatternFill
 
 class SpreadsheetIO:
 
-    # ==========================================
-    # LOAD FILE
-    # ==========================================
+    # =====================================
+    # SAVE XLSX
+    # =====================================
+
+    @staticmethod
+    def save_xlsx(model, path):
+
+        wb = Workbook()
+
+        ws = wb.active
+
+        # ---------------------------------
+        # DATA
+        # ---------------------------------
+
+        for r_idx, row in enumerate(
+            model.df.values,
+            start=1
+        ):
+
+            for c_idx, value in enumerate(
+                row,
+                start=1
+            ):
+
+                cell = ws.cell(
+                    row=r_idx,
+                    column=c_idx
+                )
+
+                cell.value = value
+
+                # CONDITIONAL FORMATTING
+
+                color = (
+                    model.get_matching_color(
+                        value
+                    )
+                )
+
+                if color:
+
+                    hex_color = (
+                        color.replace("#", "")
+                    )
+
+                    fill = PatternFill(
+                        start_color=hex_color,
+                        end_color=hex_color,
+                        fill_type="solid"
+                    )
+
+                    cell.fill = fill
+
+        # ---------------------------------
+        # SAVE RULES
+        # ---------------------------------
+
+        rules = []
+
+        for rule in model.conditional_rules:
+
+            rules.append({
+
+                "min": rule.min_value,
+                "max": rule.max_value,
+                "color": rule.color,
+                "mode": rule.mode
+            })
+
+        ws["ZZ1"] = json.dumps(rules)
+
+        wb.save(path)
+
+    # =====================================
+    # LOAD XLSX
+    # =====================================
 
     @staticmethod
     def load(path):
 
-        if path.endswith(".xlsx"):
+        wb = load_workbook(path)
 
-            return SpreadsheetIO.load_xlsx(path)
+        ws = wb.active
 
-        if path.endswith(".ods"):
-
-            return SpreadsheetIO.load_ods(path)
-
-        raise ValueError(
-            "Unsupported file type"
-        )
-
-    # ==========================================
-    # LOAD XLSX
-    # ==========================================
-
-    @staticmethod
-    def load_xlsx(path):
-
-        df = pd.read_excel(
-            path,
-            header=None
-        )
-
-        workbook = load_workbook(path)
-
-        sheet = workbook.active
+        data = []
 
         formatting = {}
 
-        for row in sheet.iter_rows():
+        max_row = ws.max_row
+        max_col = ws.max_column
 
-            for cell in row:
+        for r in range(1, max_row + 1):
 
-                if cell.fill:
+            row_data = []
+
+            for c in range(1, max_col + 1):
+
+                cell = ws.cell(
+                    row=r,
+                    column=c
+                )
+
+                value = cell.value
+
+                row_data.append(value)
+
+                fill = cell.fill
+
+                if (
+                    fill
+                    and
+                    fill.fill_type == "solid"
+                ):
 
                     color = (
-                        cell.fill.start_color.rgb
+                        fill.start_color.rgb
                     )
 
                     formatting[
-                        (cell.row - 1,
-                         cell.column - 1)
+                        (r - 1, c - 1)
                     ] = color
 
-        return df, formatting
+            data.append(row_data)
 
-    # ==========================================
-    # LOAD ODS
-    # ==========================================
+        df = pd.DataFrame(data)
 
-    @staticmethod
-    def load_ods(path):
+        rules = []
 
-        data = get_data(path)
+        try:
 
-        first_sheet = list(
-            data.keys()
-        )[0]
+            raw = ws["ZZ1"].value
 
-        rows = data[first_sheet]
+            if raw:
 
-        df = pd.DataFrame(rows)
+                rules = json.loads(raw)
 
-        formatting = {}
+        except Exception:
 
-        return df, formatting
+            pass
 
-    # ==========================================
-    # SAVE XLSX
-    # ==========================================
-
-    @staticmethod
-    def save_xlsx(
-        model,
-        path
-    ):
-
-        model.df.to_excel(
-            path,
-            index=False,
-            header=False
-        )
-
-        workbook = load_workbook(path)
-
-        sheet = workbook.active
-
-        # APPLY CONDITIONAL FORMATTING
-
-        for rule in model.conditional_rules:
-
-            for row in range(
-                model.df.shape[0]
-            ):
-
-                value = model.df.iat[
-                    row,
-                    rule.column
-                ]
-
-                if rule.matches(value):
-
-                    cell = sheet.cell(
-                        row=row + 1,
-                        column=rule.column + 1
-                    )
-
-                    cell.fill = PatternFill(
-                        start_color="FFFF00",
-                        end_color="FFFF00",
-                        fill_type="solid"
-                    )
-
-        workbook.save(path)
+        return df, formatting, rules

@@ -2,54 +2,47 @@ class ConditionalFormattingRule:
 
     def __init__(
         self,
-        column,
-        operator,
-        value,
-        bg="yellow"
+        min_value,
+        max_value,
+        color,
+        mode="within"
     ):
 
-        self.column = column
+        self.min_value = min_value
+        self.max_value = max_value
 
-        self.operator = operator
+        self.color = color
 
-        self.value = value
+        # within / outside
 
-        self.bg = bg
+        self.mode = mode
 
-    # ==========================================
-    # EVALUATION
-    # ==========================================
+    # =====================================
+    # MATCH
+    # =====================================
 
-    def matches(self, cell_value):
+    def matches(self, value):
 
         try:
 
-            if self.operator == ">":
-
-                return (
-                    float(cell_value)
-                    >
-                    float(self.value)
-                )
-
-            if self.operator == "<":
-
-                return (
-                    float(cell_value)
-                    <
-                    float(self.value)
-                )
-
-            if self.operator == "=":
-
-                return (
-                    str(cell_value)
-                    ==
-                    str(self.value)
-                )
+            number = float(value)
 
         except Exception:
 
             return False
+
+        within = (
+            self.min_value
+            <= number
+            <= self.max_value
+        )
+
+        if self.mode == "within":
+
+            return within
+
+        elif self.mode == "outside":
+
+            return not within
 
         return False
