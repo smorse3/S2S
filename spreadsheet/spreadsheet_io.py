@@ -1,5 +1,3 @@
-import json
-
 import pandas as pd
 
 from openpyxl import Workbook
@@ -8,13 +6,13 @@ from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
 
 from openpyxl.formatting.rule import (
-    CellIsRule,
-    FormulaRule
+    CellIsRule
 )
 
 from spreadsheet.conditional_formatting import (
     ConditionalFormattingRule
 )
+
 
 class SpreadsheetIO:
 
@@ -29,9 +27,11 @@ class SpreadsheetIO:
 
         ws = wb.active
 
-        # ---------------------------------
-        # DATA
-        # ---------------------------------
+        ws.title = "Sheet1"
+
+        # =================================
+        # WRITE DATA
+        # =================================
 
         for r_idx, row in enumerate(
             model.df.values,
@@ -43,76 +43,28 @@ class SpreadsheetIO:
                 start=1
             ):
 
-                cell = ws.cell(
+                ws.cell(
                     row=r_idx,
-                    column=c_idx
+                    column=c_idx,
+                    value=value
                 )
 
-                cell.value = value
-
-                # CONDITIONAL FORMATTING
-
-                color = (
-                    model.get_matching_color(
-                        value
-                    )
-                )
-
-                if color:
-
-                    hex_color = (
-                        color.replace("#", "")
-                    )
-
-                    fill = PatternFill(
-                        start_color=hex_color,
-                        end_color=hex_color,
-                        fill_type="solid"
-                    )
-
-                    cell.fill = fill
-
-        # ---------------------------------
-        # SAVE RULES
-        # ---------------------------------
-
-        rules = []
-
-        for rule in model.conditional_rules:
-
-            rules.append({
-
-                "rule_type": rule.rule_type,
-
-                "min_value": rule.min_value,
-                "max_value": rule.max_value,
-
-                "value": rule.value,
-
-                "color": rule.color,
-
-                "target_range": rule.target_range,
-
-                "stop_if_true": rule.stop_if_true
-            })
-
-        ws["ZZ1"] = json.dumps(rules)
-
-        wb.save(path)
-        
         # =================================
-        # CONDITIONAL FORMATTING
+        # EXCEL CONDITIONAL FORMATTING
         # =================================
 
         for rule in model.conditional_rules:
 
             fill = PatternFill(
+
                 start_color=(
                     rule.color.replace("#", "")
                 ),
+
                 end_color=(
                     rule.color.replace("#", "")
                 ),
+
                 fill_type="solid"
             )
 
@@ -143,7 +95,10 @@ class SpreadsheetIO:
             # NOT BETWEEN
             # -----------------------------
 
-            elif rule.rule_type == "not_between":
+            elif (
+                rule.rule_type
+                == "not_between"
+            ):
 
                 ws.conditional_formatting.add(
 
@@ -166,7 +121,10 @@ class SpreadsheetIO:
             # GREATER THAN
             # -----------------------------
 
-            elif rule.rule_type == "greater_than":
+            elif (
+                rule.rule_type
+                == "greater_than"
+            ):
 
                 ws.conditional_formatting.add(
 
@@ -188,7 +146,10 @@ class SpreadsheetIO:
             # LESS THAN
             # -----------------------------
 
-            elif rule.rule_type == "less_than":
+            elif (
+                rule.rule_type
+                == "less_than"
+            ):
 
                 ws.conditional_formatting.add(
 
@@ -206,6 +167,93 @@ class SpreadsheetIO:
                     )
                 )
 
+        # =================================
+        # SAVE INTERNAL RULE METADATA
+        # =================================
+
+        rules_ws = wb.create_sheet(
+            "__S2S_RULES__"
+        )
+
+        # HIDE SHEET
+
+        rules_ws.sheet_state = "hidden"
+
+        headers = [
+
+            "rule_type",
+            "min_value",
+            "max_value",
+            "value",
+            "color",
+            "target_range",
+            "stop_if_true"
+        ]
+
+        # HEADER ROW
+
+        for col, header in enumerate(
+            headers,
+            start=1
+        ):
+
+            rules_ws.cell(
+                row=1,
+                column=col,
+                value=header
+            )
+
+        # RULE ROWS
+
+        for row_idx, rule in enumerate(
+            model.conditional_rules,
+            start=2
+        ):
+
+            rules_ws.cell(
+                row=row_idx,
+                column=1,
+                value=rule.rule_type
+            )
+
+            rules_ws.cell(
+                row=row_idx,
+                column=2,
+                value=rule.min_value
+            )
+
+            rules_ws.cell(
+                row=row_idx,
+                column=3,
+                value=rule.max_value
+            )
+
+            rules_ws.cell(
+                row=row_idx,
+                column=4,
+                value=rule.value
+            )
+
+            rules_ws.cell(
+                row=row_idx,
+                column=5,
+                value=rule.color
+            )
+
+            rules_ws.cell(
+                row=row_idx,
+                column=6,
+                value=rule.target_range
+            )
+
+            rules_ws.cell(
+                row=row_idx,
+                column=7,
+                value=rule.stop_if_true
+            )
+
+        wb.save(path)
+
     # =====================================
     # LOAD XLSX
     # =====================================
@@ -215,62 +263,69 @@ class SpreadsheetIO:
 
         wb = load_workbook(path)
 
-        ws = wb.active
+        ws = wb["Sheet1"]
+
+        # =================================
+        # LOAD DATAFRAME
+        # =================================
 
         data = []
 
-        formatting = {}
+        for row in ws.iter_rows(
+            values_only=True
+        ):
 
-        max_row = ws.max_row
-        max_col = ws.max_column
-
-        for r in range(1, max_row + 1):
-
-            row_data = []
-
-            for c in range(1, max_col + 1):
-
-                cell = ws.cell(
-                    row=r,
-                    column=c
-                )
-
-                value = cell.value
-
-                row_data.append(value)
-
-                fill = cell.fill
-
-                if (
-                    fill
-                    and
-                    fill.fill_type == "solid"
-                ):
-
-                    color = (
-                        fill.start_color.rgb
-                    )
-
-                    formatting[
-                        (r - 1, c - 1)
-                    ] = color
-
-            data.append(row_data)
+            data.append(list(row))
 
         df = pd.DataFrame(data)
 
+        # =================================
+        # LOAD RULES
+        # =================================
+
         rules = []
 
-        try:
+        if "__S2S_RULES__" in wb.sheetnames:
 
-            raw = ws["ZZ1"].value
+            rules_ws = wb[
+                "__S2S_RULES__"
+            ]
 
-            if raw:
+            for row in rules_ws.iter_rows(
+                min_row=2,
+                values_only=True
+            ):
 
-                rules = json.loads(raw)
+                try:
 
-        except Exception:
+                    rule = (
+                        ConditionalFormattingRule(
 
-            pass
+                            rule_type=row[0],
 
-        return df, formatting, rules
+                            min_value=row[1],
+
+                            max_value=row[2],
+
+                            value=row[3],
+
+                            color=row[4],
+
+                            target_range=row[5],
+
+                            stop_if_true=bool(
+                                row[6]
+                            )
+                        )
+                    )
+
+                    rules.append(rule)
+
+                except Exception as e:
+
+                    print(
+                        "Rule load failed:",
+                        e
+                    )
+
+        return df, rules

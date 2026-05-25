@@ -336,15 +336,15 @@ class MainWindow:
 
         try:
 
-            df, formatting, rules = (
-                SpreadsheetIO.load(path)
-            )
+            df, rules = SpreadsheetIO.load(path)
 
             self.model.df = df
 
             self.model.clear_rules()
 
-            for r in rules:
+            for rule in rules:
+
+                self.model.add_rule(rule)
 
                 rule = ConditionalFormattingRule(
                     min_value=r["min"],
