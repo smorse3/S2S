@@ -457,6 +457,18 @@ class MainWindow:
             self.status_label.config(
                 text="Listening..."
             )
+            
+    # =====================================
+    # CONDITIONAL FORMATTING
+    # =====================================
+
+    def add_rule(self):
+
+        ConditionalRuleManager(
+            self.root,
+            self.model,
+            self.apply_conditional_formatting
+        )
 
     # ==================================================
     # THREAD SAFE CALLBACK
