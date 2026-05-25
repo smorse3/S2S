@@ -12,6 +12,10 @@ from openpyxl.formatting.rule import (
     FormulaRule
 )
 
+from spreadsheet.conditional_formatting import (
+    ConditionalFormattingRule
+)
+
 class SpreadsheetIO:
 
     # =====================================
@@ -78,10 +82,18 @@ class SpreadsheetIO:
 
             rules.append({
 
-                "min": rule.min_value,
-                "max": rule.max_value,
+                "rule_type": rule.rule_type,
+
+                "min_value": rule.min_value,
+                "max_value": rule.max_value,
+
+                "value": rule.value,
+
                 "color": rule.color,
-                "mode": rule.mode
+
+                "target_range": rule.target_range,
+
+                "stop_if_true": rule.stop_if_true
             })
 
         ws["ZZ1"] = json.dumps(rules)
