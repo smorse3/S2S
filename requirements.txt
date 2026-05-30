@@ -1,0 +1,7 @@
+openpyxl==3.1.5
+pyside6==6.11.1
+pyside6_addons==6.11.1
+pyside6_essentials==6.11.1
+PyYAML==6.0.2
+PyYAML==6.0.3
+tksheet==7.6.0
