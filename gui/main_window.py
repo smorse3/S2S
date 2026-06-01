@@ -654,6 +654,87 @@ class MainWindow:
                             )
 
     # ==================================================
+    # MANUAL PATTERN FILL
+    # ==================================================
+
+    self.root.bind(
+        "<Control-d>",
+        self.fill_down
+    )
+    
+    def fill_down(self, event=None):
+
+        selected = self.sheet.get_selected_cells()
+
+        if not selected:
+            return
+
+        rows = [r for r, c in selected]
+        cols = [c for r, c in selected]
+
+        top_row = min(rows)
+        left_col = min(cols)
+
+        value = self.model.get_cell(
+            top_row,
+            left_col
+        )
+
+        for r in rows:
+            for c in cols:
+
+                self.model.set_cell(
+                    r,
+                    c,
+                    value
+                )
+
+                self.sheet.set_cell_data(
+                    r,
+                    c,
+                    value
+                )
+
+        self.refresh_sheet()
+        
+    self.root.bind(
+        "<Control-r>",
+        self.fill_right
+    )
+
+    def fill_right(self, event=None):
+
+        selected = self.sheet.get_selected_cells()
+
+        if not selected:
+            return
+
+        rows = [r for r, c in selected]
+        cols = [c for r, c in selected]
+
+        value = self.model.get_cell(
+            min(rows),
+            min(cols)
+        )
+
+        for r in rows:
+            for c in cols:
+
+                self.model.set_cell(
+                    r,
+                    c,
+                    value
+                )
+
+                self.sheet.set_cell_data(
+                    r,
+                    c,
+                    value
+                )
+
+        self.refresh_sheet()
+
+    # ==================================================
     # REFRESH SHEET
     # ==================================================
 

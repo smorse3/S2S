@@ -336,6 +336,73 @@ class SpreadsheetModel:
         return None
     
     # =====================================
+    # SORT AND FILTER
+    # =====================================
+    
+    def sort_column(
+        self,
+        column,
+        ascending=True
+    ):
+
+        self.df = (
+            self.df
+            .sort_values(
+                by=column,
+                ascending=ascending
+            )
+            .reset_index(drop=True)
+        )
+        
+    def filter_column(
+        self,
+        column,
+        value
+    ):
+
+        return self.df[
+            self.df[column]
+            .astype(str)
+            .str.contains(
+                str(value),
+                case=False,
+                na=False
+            )
+        ]
+        
+    def fill_series_down(
+        self,
+        start_row,
+        end_row,
+        col
+    ):
+
+        first = float(
+            self.get_cell(start_row, col)
+        )
+
+        second = float(
+            self.get_cell(start_row + 1, col)
+        )
+
+        step = second - first
+
+        current = second
+
+        for r in range(
+            start_row + 2,
+            end_row + 1
+        ):
+
+            current += step
+
+            self.set_cell(
+                r,
+                col,
+                current
+            )
+            
+    # =====================================
     # RULES
     # =====================================
 
