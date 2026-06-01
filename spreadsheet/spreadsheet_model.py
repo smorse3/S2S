@@ -29,6 +29,8 @@ class SpreadsheetModel:
 
         self.wrap_enabled = True
         
+        self.skip_populated = False
+        
         # =====================================
         # CONDITIONAL FORMATTING
         # =====================================
@@ -80,6 +82,15 @@ class SpreadsheetModel:
         self.ensure_size(row, col)
 
         return self.df.iat[row, col]
+    
+    def is_empty(self, row, col):
+
+        value = self.get_cell(row, col)
+
+        return (
+            value is None
+            or str(value).strip() == ""
+        )
 
     # =====================================
     # NAVIGATION
@@ -95,6 +106,20 @@ class SpreadsheetModel:
 
             next_row = self.current_row
             next_col = self.current_col + 1
+
+            if self.skip_populated:
+
+                while not self.is_empty(
+                    self.current_row,
+                    next_col
+                ):
+
+                    next_col += 1
+
+                    self.ensure_size(
+                        self.current_row,
+                        next_col
+                    )
 
             self.ensure_size(
                 next_row,
@@ -187,6 +212,20 @@ class SpreadsheetModel:
         elif self.direction == "down":
 
             next_row = self.current_row + 1
+
+            if self.skip_populated:
+
+                while not self.is_empty(
+                    next_row,
+                    self.current_col
+                ):
+
+                    next_row += 1
+
+                    self.ensure_size(
+                        next_row,
+                        self.current_col
+                    )
             next_col = self.current_col
 
             self.ensure_size(
