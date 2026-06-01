@@ -671,38 +671,42 @@ class MainWindow:
     
     def fill_down(self, event=None):
 
-        selected = self.sheet.get_selected_cells()
+        boxes = self.sheet.get_all_selection_boxes()
 
-        if not selected:
-            return
-
-        rows = [r for r, c in selected]
-        cols = [c for r, c in selected]
-
-        top_row = min(rows)
-        left_col = min(cols)
-
-        value = self.model.get_cell(
-            top_row,
-            left_col
+        print(
+            "Source:",
+            source_value
         )
 
-        for r in rows:
-            for c in cols:
+        if not boxes:
+            return
+
+        r1, c1, r2, c2 = boxes[0]
+
+        source = self.model.get_cell(
+            r1,
+            c1
+        )
+
+        if source is None:
+            return
+
+        for r in range(r1, r2 + 1):
+            for c in range(c1, c2 + 1):
 
                 self.model.set_cell(
                     r,
                     c,
-                    value
+                    source
                 )
 
                 self.sheet.set_cell_data(
                     r,
                     c,
-                    value
+                    source
                 )
 
-        self.refresh_sheet()
+        self.sheet.refresh()
         
 
     def fill_right(self, event=None):
