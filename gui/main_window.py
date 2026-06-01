@@ -64,6 +64,16 @@ class MainWindow:
         # ----------------------------------------------
 
         self.build_ui()
+        
+        self.root.bind(
+            "<Control-d>",
+            self.fill_down
+        )
+        
+        self.root.bind(
+            "<Control-r>",
+            self.fill_right
+        )
    
     # ==================================================
     # On cell select
@@ -657,10 +667,7 @@ class MainWindow:
     # MANUAL PATTERN FILL
     # ==================================================
 
-    self.root.bind(
-        "<Control-d>",
-        self.fill_down
-    )
+
     
     def fill_down(self, event=None):
 
@@ -697,10 +704,6 @@ class MainWindow:
 
         self.refresh_sheet()
         
-    self.root.bind(
-        "<Control-r>",
-        self.fill_right
-    )
 
     def fill_right(self, event=None):
 
