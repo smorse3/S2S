@@ -673,16 +673,21 @@ class MainWindow:
 
         boxes = self.sheet.get_all_selection_boxes()
 
-        print(
-            "Source:",
-            source_value
-        )
-
         if not boxes:
             return
 
         r1, c1, r2, c2 = boxes[0]
 
+        print(
+            "Model:",
+            self.model.get_cell(0, 0)
+        )
+
+        print(
+            "Sheet:",
+            self.sheet.get_cell_data(0, 0)
+        )
+        
         source = self.model.get_cell(
             r1,
             c1
