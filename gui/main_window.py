@@ -58,6 +58,7 @@ class MainWindow:
         )
 
         self.is_recording = False
+        self.recording_paused = False
 
         # ----------------------------------------------
         # UI
@@ -73,6 +74,15 @@ class MainWindow:
         self.root.bind(
             "<Control-r>",
             self.fill_right
+        )
+        
+        def on_cell_double_click(self, event=None):
+
+            self.pause_for_manual_entry()
+            
+        self.sheet.bind(
+            "<Double-Button-1>",
+            self.on_cell_double_click
         )
    
     # ==================================================
@@ -420,7 +430,50 @@ class MainWindow:
             self.status_label.config(
                 text="Listening..."
             )
-            
+    
+    def pause_for_manual_entry(self):
+
+        if not self.recording:
+            return
+
+        if self.recording_paused:
+            return
+
+        self.recording_paused = True
+
+        self.record_btn.config(
+            text="Recording Paused For Manual Entry\nClick to Stop",
+            bg="yellow"
+        )
+
+        self.status_var.set(
+            "Recording paused for manual entry"
+        )
+    
+    self.root.bind(
+        "<F2>",
+        lambda e: self.pause_for_manual_entry()
+    )
+    
+    def resume_recording_after_manual_entry(self):
+
+        if not self.recording:
+            return
+
+        if not self.recording_paused:
+            return
+
+        self.recording_paused = False
+
+        self.record_btn.config(
+            text="Stop Dictation",
+            bg="red"
+        )
+
+        self.status_var.set(
+            "Recording"
+        )
+        
     # =====================================
     # CONDITIONAL FORMATTING
     # =====================================
@@ -537,6 +590,9 @@ class MainWindow:
 
     def on_transcript(self, text):
 
+        if self.recording_paused:
+            return
+        
         self.root.after(
             0,
             lambda: self.process_transcript(text)
